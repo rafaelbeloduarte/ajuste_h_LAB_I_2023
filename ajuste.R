@@ -1,42 +1,57 @@
-library(tikzDevice)
+# as linhas de códigos comentadas para fora da execução não são importantes
+# eu as uso para gerar as figuras que coloquei no texto da aula
+#library(tikzDevice)
 
+# selecionar o diretório de trabalho
 setwd("~/DriveUEMEncrypt/casa/uem/Doutorado/Disciplinas/Estágio/Aula_Coeficiente_de_transferência_de_calor_em_corpos_submersos/ajuste_h_LAB_I_2023")
 
-data <- read.csv("psi_vs_eta.csv", stringsAsFactors=TRUE)
+# importar os dados na forma de csv
+data <- read.csv("ln_psi_vs_eta.csv", stringsAsFactors=TRUE)
 
-#tikz("~/DriveUEMEncrypt/casa/uem/Doutorado/Disciplinas/Estágio/Aula_Coeficiente_de_transferência_de_calor_em_corpos_submersos/figures/psi_vs_eta.tex",
+#tikz("~/DriveUEMEncrypt/casa/uem/Doutorado/Disciplinas/Estágio/Aula_Coeficiente_de_transferência_de_calor_em_corpos_submersos/figures/ln_psi_vs_eta.tex",
 #     width = 4, height = 4)
-#plot(data$eta, data$psi, xlab = "eta", ylab = "ln psi")
+#plot(data$eta, data$ln_psi, xlab = "eta", ylab = "ln ln_psi")
 #dev.off()
 
 # tikz("~/DriveUEMEncrypt/casa/uem/Doutorado/Disciplinas/Estágio/Aula_Coeficiente_de_transferência_de_calor_em_corpos_submersos/figures/reamostragem.tex",
 #      width = 4, height = 4)
 # amostra_simulada <- data[sample(nrow(data), nrow(data), replace=TRUE), ]
 # par(mfrow = c(1, 1))
-# plot(amostra_simulada$eta, amostra_simulada$psi, ylim = c(-4,0), xlim = c(-0.007, 0), xlab = "eta", ylab = "ln psi")
-# ajuste_simulado <- lm(amostra_simulada$psi ~ amostra_simulada$eta - 1)
+# plot(amostra_simulada$eta, amostra_simulada$ln_psi, ylim = c(-4,0), xlim = c(-0.007, 0), xlab = "eta", ylab = "ln ln_psi")
+# ajuste_simulado <- lm(amostra_simulada$ln_psi ~ amostra_simulada$eta - 1)
 # abline(ajuste_simulado)
 # dev.off()
 # print(ajuste_simulado$coefficients)
 
+# criando um vetor para armazenar a distribuição do h
 h_dist <- c()
+# loop para animar o bootstrap da distribuição do h
 for (i in 1:100) {
+  # tirar uma amostra aleatória, com repetição, dos dados
   amostra_simulada <- data[sample(nrow(data), nrow(data), replace=TRUE), ]
+  
+  # ajustando a reta
+  ajuste_simulado <- lm(amostra_simulada$ln_psi ~ amostra_simulada$eta - 1)
+  
+  # desenhando os gráficos
   par(mfrow = c(1, 2))
-  plot(amostra_simulada$eta, amostra_simulada$psi, ylim = c(-4,0), xlim = c(-0.007, 0))
-  ajuste_simulado <- lm(amostra_simulada$psi ~ amostra_simulada$eta - 1)
+  plot(amostra_simulada$eta, amostra_simulada$ln_psi, ylim = c(-4,0), xlim = c(-0.007, 0))
   abline(ajuste_simulado)
   print(ajuste_simulado$coefficients)
   h_dist <- append(h_dist, ajuste_simulado$coefficients)
-  hist(h_dist, main = "")
+  hist(h_dist, main = "", ylab = "Frequência", xlab = "h")
   Sys.sleep(0.1)
 }
 
+# o loop abaixo é igual ao anterior, mas não desenho os gráficos
+# para rodar mais rápido
+# são 1000 iterações, é um valor razoável
+# 10000 é ainda melhor mas demora mais um pouco
 for (i in 1:1000) {
   amostra_simulada <- data[sample(nrow(data), nrow(data), replace=TRUE), ]
   #par(mfrow = c(1, 2))
-  #plot(amostra_simulada$eta, amostra_simulada$psi, ylim = c(-4,0), xlim = c(-0.007, 0))
-  ajuste_simulado <- lm(amostra_simulada$psi ~ amostra_simulada$eta - 1)
+  #plot(amostra_simulada$eta, amostra_simulada$ln_psi, ylim = c(-4,0), xlim = c(-0.007, 0))
+  ajuste_simulado <- lm(amostra_simulada$ln_psi ~ amostra_simulada$eta - 1)
   #abline(ajuste_simulado)
   #print(ajuste_simulado$coefficients)
   h_dist <- append(h_dist, ajuste_simulado$coefficients)
@@ -44,17 +59,18 @@ for (i in 1:1000) {
   #Sys.sleep(0.1)
 }
 
-plot(amostra_simulada$eta, amostra_simulada$psi, ylim = c(-4,0), xlim = c(-0.007, 0))
+# daqui abaixo estou apenas desenhando gráficos
+plot(amostra_simulada$eta, amostra_simulada$ln_psi, ylim = c(-4,0), xlim = c(-0.007, 0))
 abline(ajuste_simulado)
 
-#tikz("~/DriveUEMEncrypt/casa/uem/Doutorado/Disciplinas/Estágio/Aula_Coeficiente_de_transferência_de_calor_em_corpos_submersos/figures/h_dist.tex",
-#     width = 4, height = 4)
+#tikz("~/DriveUEMEncrypt/casa/uem/Doutorado/Disciplinas/Estágio/Aula_Coeficiente_de_transferência_de_calor_em_corpos_submersos/figures/h_dist.tex", width = 4, height = 4)
+#par(mfrow = c(1, 1))
 histograma <- hist(h_dist, main = "", ylab = "Frequência", xlab = "h")                                   # Draw histogram
 abline(v = mean(h_dist),                       # Add line for mean
        col = "red",
        lwd = 3)
 text(x = mean(h_dist)*1.01,                   # Add text for mean
-     y = mean(histograma$counts)*1.5,
+     y = max(histograma$counts)*1.01,
      paste(round(mean(h_dist), digits = 0)),
      col = "red",
      cex = 1)
@@ -68,12 +84,12 @@ abline(v = IC[2],                       # Add line for ICsup
        col = "blue",
        lwd = 3, , lty = "dashed")
 
-text(x = IC[1]*1.01,                   # Add text for mean
+text(x = IC[1]*0.99,                   # Add text for mean
      y = mean(histograma$counts)*0.9,
      paste(round(IC[1], digits = 0)),
      col = "blue",
      cex = 1)
-text(x = IC[2]*0.99,                   # Add text for mean
+text(x = IC[2]*1.01,                   # Add text for mean
      y = mean(histograma$counts)*0.9,
      paste(round(IC[2], digits = 0)),
      col = "blue",
